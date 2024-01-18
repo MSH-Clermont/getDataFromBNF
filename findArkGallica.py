@@ -15,41 +15,37 @@ import shutil
 import pandas as pd
 from scripts.parserBNFxml import parseXMLGallica
 
-shutil.copyfile ("data/ICB_extractAlma.csv", "data/ICB_extractAlma-copy.csv")
+shutil.copyfile ("data/FRBnF_lot5_cinema.csv", "data/FRBnF_lot5_cinema-copy.csv")
 #on ouvre le csv dans une dataFrame pour la MAJ du DOI
-dataFrameCSV = pd.read_csv("data/ICB_extractAlma.csv", delimiter=",")
+dataFrameCSV = pd.read_csv("data/FRBnF_lot5_cinema.csv", delimiter=",")
 
 
-with open('data/ICB_extractAlma.csv', newline='') as csvfile:
+with open('data/FRBnF_lot5_cinema.csv', newline='') as csvfile:
 
     fichierlu = csv.DictReader(csvfile)
 
     for y, row in enumerate(fichierlu):
-
-        url =f"https://catalogue.bnf.fr/api/SRU?version=1.2&operation=searchRetrieve&query=bib.recordid any \"{row['FRBNF_NUM']}\" and bib.digitized all \"freeAccess\""
-
-        url_titre_auteur = f"https://catalogue.bnf.fr/api/SRU?version=1.2&operation=searchRetrieve&query=(bib.author all \"{row['Auteur1']}\") and (bib.title all \"{row['Title']}\") and bib.digitized all \"freeAccess\""
-
         payload = {}
         headers = {}
         arkGallicaFrbnf = ""
-        ark_aTesterGallica =""
+        ark_aTesterGallica = ""
         arkCatalogue = ""
 
-        if row["FRBNF_oui_non"]== "vrai":
+        if row['FRBNF_NUM']:
+            url =f"https://catalogue.bnf.fr/api/SRU?version=1.2&operation=searchRetrieve&query=bib.recordid any \"{row['FRBNF_NUM']}\" and bib.digitized all \"freeAccess\""
             response = requests.request("GET", url, headers=headers, data=payload)
             root = ET.fromstringlist(response.text)
-
             arkGallicaFrbnf = parseXMLGallica('.//mxc:subfield[@code="u"]', root)
 
-        else :
+
+        elif row['Author'] and row['Title']:
+            # auteur sans la date de naissance
+            url_titre_auteur = f"https://catalogue.bnf.fr/api/SRU?version=1.2&operation=searchRetrieve&query=(bib.author all \"{row['Author']}\") and (bib.title all \"{row['Title']}\") and bib.digitized all \"freeAccess\""
             response = requests.request("GET", url_titre_auteur, headers=headers, data=payload)
             root = ET.fromstringlist(response.text)
             ark_aTesterGallica = parseXMLGallica('.//mxc:subfield[@code="u"]', root)
 
-
         dataFrameCSV.loc[y, 'ARK-Gallica'] = arkGallicaFrbnf
         dataFrameCSV.loc[y, 'ARK-Gallica-aTester'] = ark_aTesterGallica
 
-
-dataFrameCSV.to_csv("data/ICB_extractAlma.csv", index=False)
+dataFrameCSV.to_csv("data/FRBnF_lot5_cinema.csv", index=False)

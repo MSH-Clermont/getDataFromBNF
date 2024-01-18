@@ -26,33 +26,33 @@ import pandas as pd
 
 from scripts.parserBNFxml import parseXMLGallica
 
-shutil.copyfile ("data/ICB_extractAlma.csv", "data/ICB_extractAlma-copy.csv")
+
+shutil.copyfile ("data/FRBnF_lot5_cinema.csv", "data/FRBnF_lot5_cinema-copy.csv")
 #on ouvre le csv dans une dataFrame pour la MAJ du DOI
-dataFrameCSV = pd.read_csv("data/ICB_extractAlma.csv", delimiter=",")
+dataFrameCSV = pd.read_csv("data/FRBnF_lot5_cinema.csv", delimiter=",")
 
 
-with open('data/ICB_extractAlma.csv', newline='') as csvfile:
+with open('data/FRBnF_lot5_cinema.csv', newline='') as csvfile:
 
     fichierlu = csv.DictReader(csvfile)
 
     for y, row in enumerate(fichierlu):
-
-        url_for_catalog_fromFrbnf = f"https://catalogue.bnf.fr/api/SRU?version=1.2&operation=searchRetrieve&query=bib.recordid any \"{row['FRBNF_NUM']}\""
-
-        url_for_catalog_fromtitle_author = f"https://catalogue.bnf.fr/api/SRU?version=1.2&operation=searchRetrieve&query=(bib.author all \"{row['Auteur1']}\") and (bib.title all \"{row['Title']}\")"
-
         payload = {}
         headers = {}
-
+        arkGallicaFrbnf = ""
+        ark_aTesterGallica = ""
         arkCatalogue = ""
 
-        if row["FRBNF_oui_non"]== "vrai":
+        if row['FRBNF_NUM']:
 
+            url_for_catalog_fromFrbnf = f"https://catalogue.bnf.fr/api/SRU?version=1.2&operation=searchRetrieve&query=bib.recordid any \"{row['FRBNF_NUM']}\""
             response = requests.request("GET", url_for_catalog_fromFrbnf, headers=headers, data=payload)
             root = ET.fromstringlist(response.text)
             arkCatalogue = parseXMLGallica('.//mxc:controlfield[@tag="003"]', root)
 
-        else :
+
+        elif row['Author'] and row['Title']:
+            url_for_catalog_fromtitle_author = f"https://catalogue.bnf.fr/api/SRU?version=1.2&operation=searchRetrieve&query=(bib.author all \"{row['Author']}\") and (bib.title all \"{row['Title']}\")"
             response = requests.request("GET", url_for_catalog_fromtitle_author, headers=headers, data=payload)
             root = ET.fromstringlist(response.text)
             arkCatalogue = parseXMLGallica('.//mxc:controlfield[@tag="003"]', root)
@@ -60,4 +60,4 @@ with open('data/ICB_extractAlma.csv', newline='') as csvfile:
         dataFrameCSV.loc[y, 'ARK-Catalogue'] = arkCatalogue
 
 
-dataFrameCSV.to_csv("data/ICB_extractAlma.csv", index=False)
+dataFrameCSV.to_csv("data/FRBnF_lot5_cinema.csv", index=False)
